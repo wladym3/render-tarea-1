@@ -97,7 +97,7 @@ app.post("/webhook", async (req, res) => {
             headers: { Authorization: `Bearer ${tokenData.access_token}` },
             validateStatus: () => true
           });
-          console.log("Respuesta Spotify /current:", resp.status, resp.data);
+          console.log("Spotify /current:", resp.status, resp.data);
 
           if (resp.status === 401) {
             await axios.post(`${TELEGRAM_API}/sendMessage`, {
@@ -127,7 +127,11 @@ app.post("/webhook", async (req, res) => {
             });
           }
         } catch (err) {
-          console.error("Error en /current:", err.response?.data || err.message);
+          if (err.response) {
+            console.log("Spotify /current ERROR:", err.response.status, err.response.data);
+          } else {
+            console.log("Spotify /current ERROR:", err.message);
+          }
           await axios.post(`${TELEGRAM_API}/sendMessage`, {
             chat_id: chatId,
             text: "Error getting current song.",
@@ -141,6 +145,7 @@ app.post("/webhook", async (req, res) => {
             headers: { Authorization: `Bearer ${tokenData.access_token}` },
             validateStatus: () => true
           });
+          console.log("Spotify /play:", resp.status, resp.data);
 
           if (resp.status === 200 || resp.status === 204) {
             await axios.post(`${TELEGRAM_API}/sendMessage`, {
@@ -169,7 +174,11 @@ app.post("/webhook", async (req, res) => {
             });
           }
         } catch (err) {
-          console.error("Error in /play:", err.response?.data || err.message);
+          if (err.response) {
+            console.log("Spotify /play ERROR:", err.response.status, err.response.data);
+          } else {
+            console.log("Spotify /play ERROR:", err.message);
+          }
           await axios.post(`${TELEGRAM_API}/sendMessage`, {
             chat_id: chatId,
             text: "Error resuming playback.",
@@ -183,6 +192,7 @@ app.post("/webhook", async (req, res) => {
             headers: { Authorization: `Bearer ${tokenData.access_token}` },
             validateStatus: () => true
           });
+          console.log("Spotify /pause:", resp.status, resp.data);
 
           if (resp.status === 200 || resp.status === 204) {
             await axios.post(`${TELEGRAM_API}/sendMessage`, {
@@ -211,7 +221,11 @@ app.post("/webhook", async (req, res) => {
             });
           }
         } catch (err) {
-          console.error("Error in /pause:", err.response?.data || err.message);
+          if (err.response) {
+            console.log("Spotify /pause ERROR:", err.response.status, err.response.data);
+          } else {
+            console.log("Spotify /pause ERROR:", err.message);
+          }
           await axios.post(`${TELEGRAM_API}/sendMessage`, {
             chat_id: chatId,
             text: "Error pausing playback.",
@@ -221,14 +235,22 @@ app.post("/webhook", async (req, res) => {
     } else if (texto === "/next") {
       await requireSpotify(async () => {
         try {
-          await axios.post('https://api.spotify.com/v1/me/player/next', {}, {
-            headers: { Authorization: `Bearer ${tokenData.access_token}` }
+          const resp = await axios.post('https://api.spotify.com/v1/me/player/next', {}, {
+            headers: { Authorization: `Bearer ${tokenData.access_token}` },
+            validateStatus: () => true
           });
+          console.log("Spotify /next:", resp.status, resp.data);
+
           await axios.post(`${TELEGRAM_API}/sendMessage`, {
             chat_id: chatId,
             text: "Skipped to next song!",
           });
-        } catch {
+        } catch (err) {
+          if (err.response) {
+            console.log("Spotify /next ERROR:", err.response.status, err.response.data);
+          } else {
+            console.log("Spotify /next ERROR:", err.message);
+          }
           await axios.post(`${TELEGRAM_API}/sendMessage`, {
             chat_id: chatId,
             text: "Error skipping to next song.",
@@ -242,7 +264,7 @@ app.post("/webhook", async (req, res) => {
             headers: { Authorization: `Bearer ${tokenData.access_token}` },
             validateStatus: () => true
           });
-          console.log("/PREVIOUS respuesta: ", resp.status, resp.data);
+          console.log("Spotify /previous:", resp.status, resp.data);
 
           if (resp.status === 200 || resp.status === 204) {
             await axios.post(`${TELEGRAM_API}/sendMessage`, {
@@ -271,17 +293,16 @@ app.post("/webhook", async (req, res) => {
             });
           }
         } catch (err) {
-          console.error("Error in /previous:", err.response?.data || err.message);
+          if (err.response) {
+            console.log("Spotify /previous ERROR:", err.response.status, err.response.data);
+          } else {
+            console.log("Spotify /previous ERROR:", err.message);
+          }
           await axios.post(`${TELEGRAM_API}/sendMessage`, {
             chat_id: chatId,
             text: "Error going to previous song.",
           });
         }
-      });
-    } else if (texto === "/search" || (texto.startsWith("/search ") && texto.replace("/search ", "").trim() === "")) {
-      await axios.post(`${TELEGRAM_API}/sendMessage`, {
-        chat_id: chatId,
-        text: "Please provide a search term.",
       });
     } else if (texto.startsWith("/search ")) {
       await requireSpotify(async () => {
@@ -298,6 +319,8 @@ app.post("/webhook", async (req, res) => {
             headers: { Authorization: `Bearer ${tokenData.access_token}` },
             params: { q: query, type: "track", limit: 5 }
           });
+          console.log("Spotify /search:", resp.status, resp.data);
+
           const tracks = resp.data.tracks.items;
           if (tracks.length === 0) {
             await axios.post(`${TELEGRAM_API}/sendMessage`, {
@@ -323,7 +346,12 @@ app.post("/webhook", async (req, res) => {
               };
             }
           }
-        } catch {
+        } catch (err) {
+          if (err.response) {
+            console.log("Spotify /search ERROR:", err.response.status, err.response.data);
+          } else {
+            console.log("Spotify /search ERROR:", err.message);
+          }
           await axios.post(`${TELEGRAM_API}/sendMessage`, {
             chat_id: chatId,
             text: "Error searching for songs.",
